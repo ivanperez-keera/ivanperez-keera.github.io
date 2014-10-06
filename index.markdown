@@ -1,3 +1,3 @@
 Some text
 
-* A
+* AAA
