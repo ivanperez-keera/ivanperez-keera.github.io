@@ -1,3 +1,3 @@
 Hahaha
 
-{% include index.html %}
+{% include index.md %}
