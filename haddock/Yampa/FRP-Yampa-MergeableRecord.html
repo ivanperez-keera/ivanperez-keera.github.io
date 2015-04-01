@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>FRP.Yampa.MergeableRecord</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_FRP-Yampa-MergeableRecord.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">Yampa-0.9.6: Library for programming hybrid systems.</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Portability</th><td>portable</td></tr><tr><th>Stability</th><td>provisional</td></tr><tr><th>Maintainer</th><td>nilsson@cs.yale.edu</td></tr><tr><th>Safe Haskell</th><td>Safe-Inferred</td></tr></table><p class="caption">FRP.Yampa.MergeableRecord</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>Framework for record merging.
+</p><p>Idea:
+</p><p>MergeableRecord is intended to be a super class for classes providing
+ update operations on records. The ADT induced by such a set of operations
+ can be considered a <a href="mergeable record.html">mergeable record</a>, which can be merged into larger
+ mergeable records essentially by function composition. Finalization turns
+ a mergeable record into a record.
+</p><p>Typical use:
+</p><p>Given
+</p><pre>  data Foo = Foo {l1 :: T1, l2 :: T2}
+</pre><p>one define a mergeable record type (MR Foo) by the following instance:
+</p><pre>
+   instance MergeableRecord Foo where
+       mrDefault = Foo {l1 = v1_dflt, l2 = v2_dflt}
+</pre><p>Typically, one would also provide definitions for setting the fields,
+ possibly (but not necessarily) overloaded:
+</p><pre>
+   instance HasL1 Foo where
+       setL1 v = mrMake (foo -&gt; foo {l1 = v})
+</pre><p>Now Foo records can be created as follows:
+</p><pre>
+   let foo1 = setL1 v1
+   ...
+   let foo2 = setL2 v2 ~+~ foo1
+   ...
+   let foo<a href="N">N</a> = setL1 vN ~+~ foo<a href="N-1">N-1</a>
+   let fooFinal = mrFinalize foo<a href="N">N</a>
+</pre></div></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><span class="keyword">class</span>  <a name="t:MergeableRecord" class="def">MergeableRecord</a> a  <span class="keyword">where</span></p><div class="subs methods"><p class="caption">Methods</p><p class="src"><a name="v:mrDefault" class="def">mrDefault</a> :: a</p></div></div><div class="top"><p class="src"><span class="keyword">data</span> <a href="FRP-Yampa-MergeableRecord.html#t:MergeableRecord">MergeableRecord</a> a =&gt; <a name="t:MR" class="def">MR</a> a </p></div><div class="top"><p class="src"><a name="v:mrMake" class="def">mrMake</a> :: <a href="FRP-Yampa-MergeableRecord.html#t:MergeableRecord">MergeableRecord</a> a =&gt; (a -&gt; a) -&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a</p></div><div class="top"><p class="src"><a name="v:-126--43--126-" class="def">(~+~)</a> :: <a href="FRP-Yampa-MergeableRecord.html#t:MergeableRecord">MergeableRecord</a> a =&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a -&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a -&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a</p></div><div class="top"><p class="src"><a name="v:mrMerge" class="def">mrMerge</a> :: <a href="FRP-Yampa-MergeableRecord.html#t:MergeableRecord">MergeableRecord</a> a =&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a -&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a -&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a</p></div><div class="top"><p class="src"><a name="v:mrFinalize" class="def">mrFinalize</a> :: <a href="FRP-Yampa-MergeableRecord.html#t:MergeableRecord">MergeableRecord</a> a =&gt; <a href="FRP-Yampa-MergeableRecord.html#t:MR">MR</a> a -&gt; a</p></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.13.2</p></div></body></html>

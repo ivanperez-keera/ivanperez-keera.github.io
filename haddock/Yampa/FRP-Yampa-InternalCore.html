@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>FRP.Yampa.InternalCore</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_FRP-Yampa-InternalCore.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">Yampa-0.9.6: Library for programming hybrid systems.</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Portability</th><td>non-portable (GHC extensions)</td></tr><tr><th>Stability</th><td>provisional</td></tr><tr><th>Maintainer</th><td>ivan.perez@keera.co.uk</td></tr><tr><th>Safe Haskell</th><td>None</td></tr></table><p class="caption">FRP.Yampa.InternalCore</p></div><div id="table-of-contents"><p class="caption">Contents</p><ul><li><a href="#g:1">Basic definitions
+</a><ul><li><a href="#g:2">Time
+</a></li><li><a href="#g:3">Signal Functions
+</a></li><li><a href="#g:4">Future Signal Function
+</a><ul><li><a href="#g:5">Scanning
+</a></li></ul></li><li><a href="#g:6">Function descriptions
+</a></li><li><a href="#g:7">Lifting
+</a></li></ul></li></ul></div><div id="description"><p class="caption">Description</p><div class="doc"><p>Domain-specific language embedded in Haskell for programming hybrid (mixed
+ discrete-time and continuous-time) systems. Yampa is based on the concepts
+ of Functional Reactive Programming (FRP) and is structured using arrow
+ combinators.
+</p><p>You can find examples, tutorials and documentation on Yampa here:
+</p><p><a href="www.haskell.org/haskellwiki/Yampa">www.haskell.org/haskellwiki/Yampa</a>
+</p><p>Structuring a hybrid system in Yampa is done based on two main concepts:
+</p><ul><li> Signal Functions: <code><a href="FRP-Yampa-InternalCore.html#t:SF">SF</a></code>. Yampa is based on the concept of Signal Functions,
+ which are functions from a typed input signal to a typed output signal.
+ Conceptually, signals are functions from Time to Value, where time are the
+ real numbers and, computationally, a very dense approximation (Double) is
+ used.
+</li><li> Events: <code><a href="FRP-Yampa-Event.html#t:Event">Event</a></code>. Values that may or may not occur (and would probably
+ occur rarely). It is often used for incoming network messages, mouse
+ clicks, etc. Events are used as values carried by signals.
+</li></ul><p>A complete Yampa system is defined as one Signal Function from some
+ type <code>a</code> to a type <code>b</code>. The execution of this signal transformer
+ with specific input can be accomplished by means of two functions:
+ <code>reactimate</code> (which needs an initialization action,
+ an input sensing action and an actuation/consumer action and executes
+ until explicitly stopped), and <code>react</code> (which executes only one cycle).
+</p><p>Apart from using normal functions and arrow syntax to define <code><a href="FRP-Yampa-InternalCore.html#t:SF">SF</a></code>s, you
+ can also use several combinators. See [<a href="#g:4">#g:4</a>] for basic signals combinators,
+ [<a href="#g:11">#g:11</a>] for ways of switching from one signal transformation to another,
+ and [<a href="#g:16">#g:16</a>] for ways of transforming Event-carrying signals into continuous
+ signals, [<a href="#g:19">#g:19</a>] for ways of delaying signals, and [<a href="#g:21">#g:21</a>] for ways to
+ feed a signal back to the same signal transformer.
+</p><p>Ways to define Event-carrying signals are given in [<a href="#g:7">#g:7</a>], and
+ <a href="FRP-Yampa-Event.html">FRP.Yampa.Event</a> defines events and event-manipulation functions.
+</p><p>Finally, see [<a href="#g:26">#g:26</a>] for sources of randomness (useful in games).
+</p><p>CHANGELOG:
+</p><ul><li> Adds (most) documentation.
+</li><li> New version using GADTs.
+</li></ul><p>ToDo:
+</p><ul><li> Specialize def. of repeatedly. Could have an impact on invaders.
+</li><li> New defs for accs using SFAcc
+</li><li> Make sure opt worked: e.g.
+</li></ul><pre>     repeatedly &gt;&gt;&gt; count &gt;&gt;&gt; arr (fmap sqr)
+</pre><ul><li> Introduce SFAccHld.
+</li><li> See if possible to unify AccHld wity Acc??? They are so close.
+</li><li> Introduce SScan. BUT KEEP IN MIND: Most if not all opts would
+   have been possible without GADTs???
+</li><li> Look into pairs. At least pairing of SScan ought to be interesting.
+</li><li> Would be nice if we could get rid of first &amp; second with impunity
+   thanks to Id optimizations. That's a clear win, with or without
+   an explicit pair combinator.
+</li><li> delayEventCat is a bit complicated ...
+</li></ul><p>Random ideas:
+</p><ul><li> What if one used rules to optimize
+   - (arr :: SF a ()) to (constant ())
+   - (arr :: SF a a) to identity
+   But inspection of invader source code seem to indicate that
+   these are not very common cases at all.
+</li><li> It would be nice if it was possible to come up with opt. rules
+   that are invariant of how signal function expressions are
+   parenthesized. Right now, we have e.g.
+       arr f &gt;&gt;&gt; (constant c &gt;&gt;&gt; sf)
+   being optimized to
+       cpAuxA1 f (cpAuxC1 c sf)
+   whereas it clearly should be possible to optimize to just
+       cpAuxC1 c sf
+   What if we didn't use SF' but
+      SFComp :: <a href="tfun">tfun</a> -&gt; SF' a b -&gt; SF' b c -&gt; SF' a c
+   ???
+</li><li> The transition function would still be optimized in (pretty much)
+   the current way, but it would still be possible to look <a href="inside.html">inside</a>
+   composed signal functions for lost optimization opts.
+   Seems to me this could be done without too much extra effort/no dupl.
+   work.
+   E.g. new cpAux, the general case:
+</li></ul><pre>
+      cpAux sf1 sf2 = SFComp tf sf1 sf2
+          where
+              tf dt a = (cpAux sf1' sf2', c)
+                  where
+                      (sf1', b) = (sfTF' sf1) dt a
+                      (sf2', c) = (sfTF' sf2) dt b
+</pre><ul><li> The ONLY change was changing the constructor from SF' to SFComp and
+   adding sf1 and sf2 to the constructor app.!
+</li><li> An optimized case:
+     cpAuxC1 b sf1 sf2               = SFComp tf sf1 sf2
+   So cpAuxC1 gets an extra arg, and we change the constructor.
+   But how to exploit without writing 1000s of rules???
+   Maybe define predicates on SFComp to see if the first or second
+   sf are <a href="interesting.html">interesting</a>, and if so, make <a href="reassociate.html">reassociate</a> and make a
+   recursive call? E.g. we're in the arr case, and the first sf is another
+   arr, so we'd like to combine the two.
+</li><li> It would also be intersting, then, to know when to STOP playing this
+   game, due to the overhead involved.
+</li><li> Why don't we have a <a href="SWITCH.html">SWITCH</a> constructor that indicates that the
+   structure will change, and thus that it is worthwile to keep
+   looking for opt. opportunities, whereas a plain <a href="SF'.html">SF'</a> would
+   indicate that things NEVER are going to change, and thus we can just
+   as well give up?
+</li></ul></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"><li class="src short">module <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Control-Arrow.html">Control.Arrow</a></li><li class="src short"><span class="keyword">type</span> <a href="#t:Time">Time</a> = <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Prelude.html#t:Double">Double</a></li><li class="src short"><span class="keyword">type</span> <a href="#t:DTime">DTime</a> = <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Prelude.html#t:Double">Double</a></li><li class="src short"><span class="keyword">data</span>  <a href="#t:SF">SF</a> a b = <a href="#v:SF">SF</a> {<ul class="subs"><li><a href="#v:sfTF">sfTF</a> :: a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b</li></ul>}</li><li class="src short"><span class="keyword">data</span>  <a href="#t:SF-39-">SF'</a> a b <span class="keyword">where</span><ul class="subs"><li><a href="#v:SFArr">SFArr</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b  </li><li><a href="#v:SFSScan">SFSScan</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; !(c -&gt; a -&gt; <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Data-Maybe.html#t:Maybe">Maybe</a> (c, b)) -&gt; !c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b  </li><li><a href="#v:SFEP">SFEP</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; <a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b) -&gt; !(c -&gt; a -&gt; (c, b, b)) -&gt; !c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b  </li><li><a href="#v:SFCpAXA">SFCpAXA</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a d) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> b c) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> c d) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a d  </li><li><a href="#v:SF-39-">SF'</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b  </li></ul></li><li class="src short"><a href="#v:sfTF-39-">sfTF'</a> ::  <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b -&gt; <a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b</li><li class="src short"><a href="#v:sfId">sfId</a> ::  <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a a</li><li class="src short"><a href="#v:sfConst">sfConst</a> ::  b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</li><li class="src short"><a href="#v:sfArrG">sfArrG</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</li><li class="src short"><a href="#v:sfSScan">sfSScan</a> ::  (c -&gt; a -&gt; <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Data-Maybe.html#t:Maybe">Maybe</a> (c, b)) -&gt; c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</li><li class="src short"><span class="keyword">type</span> <a href="#t:Transition">Transition</a> a b = (<a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b, b)</li><li class="src short"><span class="keyword">data</span>  <a href="#t:FunDesc">FunDesc</a> a b <span class="keyword">where</span><ul class="subs"><li><a href="#v:FDI">FDI</a> ::  <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a a  </li><li><a href="#v:FDC">FDC</a> ::  b -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b  </li><li><a href="#v:FDE">FDE</a> ::  (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; b) -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b  </li><li><a href="#v:FDG">FDG</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b  </li></ul></li><li class="src short"><a href="#v:fdFun">fdFun</a> ::  <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b -&gt; a -&gt; b</li><li class="src short"><a href="#v:arrPrim">arrPrim</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> a b</li><li class="src short"><a href="#v:arrEPrim">arrEPrim</a> ::  (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</li><li class="src short"><a href="#v:epPrim">epPrim</a> ::  (c -&gt; a -&gt; (c, b, b)) -&gt; c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</li></ul></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src">module <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Control-Arrow.html">Control.Arrow</a></p></div><h1 id="g:1">Basic definitions
+</h1><h2 id="g:2">Time
+</h2><div class="top"><p class="src"><span class="keyword">type</span> <a name="t:Time" class="def">Time</a> = <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Prelude.html#t:Double">Double</a></p><div class="doc"><p>Time is used both for time intervals (duration), and time w.r.t. some
+ agreed reference point in time.
+</p></div></div><div class="top"><p class="src"><span class="keyword">type</span> <a name="t:DTime" class="def">DTime</a> = <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Prelude.html#t:Double">Double</a></p><div class="doc"><p>DTime is the time type for lengths of sample intervals. Conceptually,
+ DTime = R+ = { x in R | x &gt; 0 }. Don't assume Time and DTime have the
+ same representation.
+</p></div></div><h2 id="g:3">Signal Functions
+</h2><div class="top"><p class="src"><span class="keyword">data</span>  <a name="t:SF" class="def">SF</a> a b </p><div class="doc"><p>Signal function that transforms a signal carrying values of some type <code>a</code>
+ into a signal carrying values of some type <code>b</code>. You can think of it as
+ (Signal a -&gt; Signal b). A signal is, conceptually, a
+ function from <code><a href="FRP-Yampa-InternalCore.html#t:Time">Time</a></code> to value.
+</p></div><div class="subs constructors"><p class="caption">Constructors</p><table><tr><td class="src"><a name="v:SF" class="def">SF</a></td><td class="doc empty">&nbsp;</td></tr><tr><td colspan="2"><div class="subs fields"><p class="caption">Fields</p><dl><dt class="src"><a name="v:sfTF" class="def">sfTF</a> :: a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b</dt><dd class="doc empty">&nbsp;</dd></dl><div class="clear"></div></div></td></tr></table></div><div class="subs instances"><p id="control.i:SF" class="caption collapser" onclick="toggleSection('i:SF')">Instances</p><div id="section.i:SF" class="show"><table><tr><td class="src"><a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Control-Arrow.html#t:Arrow">Arrow</a> <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a></td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Control-Arrow.html#t:ArrowLoop">ArrowLoop</a> <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a></td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Control-Category.html#t:Category">Category</a> <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a></td><td class="doc empty">&nbsp;</td></tr></table></div></div></div><h2 id="g:4">Future Signal Function
+</h2><div class="top"><p class="src"><span class="keyword">data</span>  <a name="t:SF-39-" class="def">SF'</a> a b <span class="keyword">where</span></p><div class="subs constructors"><p class="caption">Constructors</p><table><tr><td class="src"><a name="v:SFArr" class="def">SFArr</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:SFSScan" class="def">SFSScan</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; !(c -&gt; a -&gt; <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Data-Maybe.html#t:Maybe">Maybe</a> (c, b)) -&gt; !c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:SFEP" class="def">SFEP</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; <a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b) -&gt; !(c -&gt; a -&gt; (c, b, b)) -&gt; !c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:SFCpAXA" class="def">SFCpAXA</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a d) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> b c) -&gt; !(<a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> c d) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a d</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:SF-39-" class="def">SF'</a> ::  !(<a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</td><td class="doc empty">&nbsp;</td></tr></table></div></div><div class="top"><p class="src"><a name="v:sfTF-39-" class="def">sfTF'</a> ::  <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b -&gt; <a href="FRP-Yampa-InternalCore.html#t:DTime">DTime</a> -&gt; a -&gt; <a href="FRP-Yampa-InternalCore.html#t:Transition">Transition</a> a b</p></div><div class="top"><p class="src"><a name="v:sfId" class="def">sfId</a> ::  <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a a</p></div><div class="top"><p class="src"><a name="v:sfConst" class="def">sfConst</a> ::  b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</p></div><div class="top"><p class="src"><a name="v:sfArrG" class="def">sfArrG</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</p></div><h3 id="g:5">Scanning
+</h3><div class="top"><p class="src"><a name="v:sfSScan" class="def">sfSScan</a> ::  (c -&gt; a -&gt; <a href="file:///usr/share/doc/ghc-doc/html/libraries/base-4.6.0.1/Data-Maybe.html#t:Maybe">Maybe</a> (c, b)) -&gt; c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b</p></div><div class="top"><p class="src"><span class="keyword">type</span> <a name="t:Transition" class="def">Transition</a> a b = (<a href="FRP-Yampa-InternalCore.html#t:SF-39-">SF'</a> a b, b)</p></div><h2 id="g:6">Function descriptions
+</h2><div class="top"><p class="src"><span class="keyword">data</span>  <a name="t:FunDesc" class="def">FunDesc</a> a b <span class="keyword">where</span></p><div class="subs constructors"><p class="caption">Constructors</p><table><tr><td class="src"><a name="v:FDI" class="def">FDI</a> ::  <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a a</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:FDC" class="def">FDC</a> ::  b -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:FDE" class="def">FDE</a> ::  (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; b) -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</td><td class="doc empty">&nbsp;</td></tr><tr><td class="src"><a name="v:FDG" class="def">FDG</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b</td><td class="doc empty">&nbsp;</td></tr></table></div></div><div class="top"><p class="src"><a name="v:fdFun" class="def">fdFun</a> ::  <a href="FRP-Yampa-InternalCore.html#t:FunDesc">FunDesc</a> a b -&gt; a -&gt; b</p></div><h2 id="g:7">Lifting
+</h2><div class="top"><p class="src"><a name="v:arrPrim" class="def">arrPrim</a> ::  (a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> a b</p><div class="doc"><p>Lifts a pure function into a signal function (applied pointwise).
+</p></div></div><div class="top"><p class="src"><a name="v:arrEPrim" class="def">arrEPrim</a> ::  (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a -&gt; b) -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</p><div class="doc"><p>Lifts a pure function into a signal function applied to events
+   (applied pointwise).
+</p></div></div><div class="top"><p class="src"><a name="v:epPrim" class="def">epPrim</a> ::  (c -&gt; a -&gt; (c, b, b)) -&gt; c -&gt; b -&gt; <a href="FRP-Yampa-InternalCore.html#t:SF">SF</a> (<a href="FRP-Yampa-Event.html#t:Event">Event</a> a) b</p></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.13.2</p></div></body></html>
