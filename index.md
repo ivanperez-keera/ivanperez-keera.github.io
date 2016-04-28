@@ -1,5 +1,5 @@
 --
 title: Document Center
 redirect_to:
-  - http://cs.nottingham.ac.uk/~ixp
----
+  - http://github.com/keera-studios/haskell-game-programming
+--
