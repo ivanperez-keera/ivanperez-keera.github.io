@@ -1,3 +1,0 @@
-Hahaha
-
-{% include index.md %}
